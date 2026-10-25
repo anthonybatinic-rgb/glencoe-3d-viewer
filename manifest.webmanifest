@@ -1,0 +1,17 @@
+{
+  "name": "Glencoe 3D Viewer",
+  "short_name": "Glencoe3D",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#020817",
+  "theme_color": "#0f172a",
+  "description": "Interactive 3D viewer experience",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

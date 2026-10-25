@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Glencoe 3D viewer" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <title>Glencoe 3D Viewer</title>
+    <style>
+      :root {
+        --bg: #020817;
+        --panel: rgba(15, 23, 42, 0.78);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at top, #0f172a, var(--bg) 50%);
+        color: var(--text);
+        font-family: Inter, "Segoe UI", sans-serif;
+        overflow: hidden;
+      }
+
+      body {
+        display: flex;
+        align-items: stretch;
+        justify-content: stretch;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .hud {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: var(--panel);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 18px 32px rgba(2, 6, 23, 0.35);
+        backdrop-filter: blur(8px);
+        max-width: min(420px, calc(100vw - 32px));
+        z-index: 10;
+      }
+
+      .title {
+        margin: 0 0 6px;
+        font-size: clamp(1.1rem, 2vw, 1.6rem);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.9);
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hud">
+      <h1 class="title"><span class="dot"></span>Glencoe 3D Viewer</h1>
+      <p class="subtitle">Drag to orbit, scroll to zoom, and explore the model.</p>
+    </div>
+
+    <script type="module">
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+      import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/controls/OrbitControls.js';
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020817);
+      scene.fog = new THREE.Fog(0x020817, 9, 24);
+
+      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 2.5, 7);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.minDistance = 3;
+      controls.maxDistance = 20;
+
+      const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0x7dd3fc, 1.6);
+      keyLight.position.set(4, 5, 3);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0xa78bfa, 0.9);
+      rimLight.position.set(-4, 2, -3);
+      scene.add(rimLight);
+
+      const group = new THREE.Group();
+      scene.add(group);
+
+      const geometry = new THREE.IcosahedronGeometry(1.5, 1);
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0x38bdf8,
+        metalness: 0.2,
+        roughness: 0.3,
+        transmission: 0.15,
+        thickness: 0.8,
+        transparent: true,
+        opacity: 0.92,
+        emissive: new THREE.Color(0x0b1120),
+        clearcoat: 0.7,
+        clearcoatRoughness: 0.2
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      group.add(mesh);
+
+      const wire = new THREE.LineSegments(
+        new THREE.WireframeGeometry(geometry),
+        new THREE.LineBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.45 })
+      );
+      group.add(wire);
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(2.35, 0.04, 16, 200),
+        new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.7 })
+      );
+      ring.rotation.x = Math.PI / 2.4;
+      group.add(ring);
+
+      const particlesGeometry = new THREE.BufferGeometry();
+      const count = 1800;
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 12;
+        positions[i + 1] = (Math.random() - 0.5) * 12;
+        positions[i + 2] = (Math.random() - 0.5) * 12;
+      }
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const particles = new THREE.Points(
+        particlesGeometry,
+        new THREE.PointsMaterial({ color: 0xbfe7ff, size: 0.04, transparent: true, opacity: 0.9 })
+      );
+      scene.add(particles);
+
+      const clock = new THREE.Clock();
+
+      function animate() {
+        const t = clock.getElapsedTime();
+        mesh.rotation.x = t * 0.35;
+        mesh.rotation.y = t * 0.7;
+        wire.rotation.z = -t * 0.45;
+        ring.rotation.z = t * 0.35;
+        particles.rotation.y = t * 0.08;
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => console.warn('SW registration failed:', err));
+        });
+      }
+    </script>
+  </body>
+</html>
